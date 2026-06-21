@@ -9,3 +9,9 @@ def create_user_table(conn):
         ;'''
     cur.execute(sql)
     conn.commit()
+
+def add_user(conn, name, hash_Psw):
+    cur = conn.cursor()
+    sql = 'INSERT INTO users (username, password_hash) VALUES (?,?);'
+    cur.execute(sql, (name, hash_Psw))
+    conn.commit()
