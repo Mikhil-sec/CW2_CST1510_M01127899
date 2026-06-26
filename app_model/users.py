@@ -1,6 +1,8 @@
 import bcrypt
-from app_model.schema import add_user
+from app_model.schema import add_user, get_user
 from app_model.db import get_connection
+
+#CLI based user input
 def New_User():
     Username = input("Hello, Please enter your username: ")
     Password = input("Please enter your password: ")
@@ -30,6 +32,17 @@ def HashPassword_Generator(psw):
     hash = bcrypt.hashpw(byte_psw, salt)
     return hash.decode('utf-8')
 
+def Register_User_Streamlit(Username,Password):
+    """Takes username/password as arguments instead of asking via input()."""
+    conn = get_connection()
+
+    existing_user = get_user(conn, Username)
+    if existing_user is not None:
+        return False, "Username already exists."
+
+    Hash_Psw = HashPassword_Generator(Password)
+    add_user(conn, Username, Hash_Psw)
+    return True, "User successfully registered!"
 
 
 
