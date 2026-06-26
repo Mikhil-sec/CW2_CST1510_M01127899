@@ -45,5 +45,25 @@ def Register_User_Streamlit(Username,Password):
     return True, "User successfully registered!"
 
 
+#=====================================
+#    FLAT FILE REGISTRATION & LOGIN
+#=====================================
 
+def register_user():
+    name = input('Enter your name: > ')
+    password = input('Enter your password: > ')
+    hash_password = HashPassword_Generator(password)
+    with open(r'CW2_CST1510_M01127899\DATA\users.txt', 'a') as f:
+        f.write(f'{name},{hash_password}\n')
+    print('User successfully registered!')
 
+def login_User():
+    name = input('Enter your name: > ')
+    password = input('Enter your password: > ')
+    with open(r'CW2_CST1510_M01127899\DATA\users.txt', 'r') as f:
+        users = f.readlines()
+    for user in users:
+        user_name, user_hash = user.strip().split(',')
+        if name == user_name and Password_Checker(password,user_hash):
+            return True
+    return False
