@@ -1,14 +1,16 @@
 from app_model.db import get_connection
 from app_model.schema import create_user_table
 from app_model.users import New_User, register_user,login_User, Register_User_Streamlit, Login_User_Streamlit
-from app_model.cyber_incidents import migrate_cyber_incidents
-from app_model.it_tickets import migrate_it_tickets
-from app_model.metadatas import migrate_metadatas
+from app_model.cyber_incidents import migrate_cyber_incidents, get_all_cyber_incidents
+from app_model.it_tickets import migrate_it_tickets, get_all_it_tickets
+from app_model.metadatas import migrate_metadatas, get_all_metadatas
 
 import streamlit as st
+import pandas as pd
 
 def Migrate_All_Tables():
     conn = get_connection()
+    create_user_table(conn)
     migrate_cyber_incidents(conn)
     migrate_it_tickets(conn)
     migrate_metadatas(conn)
@@ -71,12 +73,50 @@ def Dashboard_Login_Register():
                 st.error(message)
 
 def User_Dashboard():
+    conn = get_connection()
     st.title(f"Welcome, {st.session_state["username"]} !")
     st.write("This is the dashboard beep bop 😎")
-    if st.button("Logout"):
+    if st.button("Logout"): #reseting states
         st.session_state["logged_in"] = False
         st.session_state["username"] = None
-        st.rerun()
+        st.rerun() #force rerun to go back to login page
+    st.divider()
+    dataset_choice = st.sidebar.selectbox("Choose a dataset",["Cyber incidents", "IT Tickets", "Dataset Metadata"])
+
+
+    if dataset_choice == "Cyber incidents":
+        df = get_all_cyber_incidents(conn)
+        st.subheader("Cyber incidents")
+        st.dataframe(df)
+        col1, col2 = st.columns(2)
+        with col1: #use of with to specify which code in which container for cleaner look
+            st.caption("By Severity")
+            st.bar_chart(df["severity"].value_counts()) #change bar chart for plotly interface later !!
+        with col2:
+            st.caption("By Category")
+            st.bar_chart(df["category"].value_counts())
+
+
+    elif dataset_choice == "IT Tickets":
+        df=get_all_it_tickets(conn)
+        st.subheader("IT Tickets")
+        st.dataframe(df)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.caption("By Priority")
+            st.bar_chart(df["priority"].value_counts())
+        with col2:
+            st.caption("By Status")
+            st.bar_chart(df["status"].value_counts())
+
+        st.caption("Average Resolution Time by Priority (hours)")
+        st.bar_chart(df.groupby("priority")["resolution_time_hours"].mean())
+
+
+    elif dataset_choice == "Dataset Metadata":
+        df = get_all_metadatas(conn)
+        st.subheader("Dataset Metadata")
+        st.dataframe(df)
 
 def Streamlit_main():
     if st.session_state["logged_in"]:
@@ -85,6 +125,7 @@ def Streamlit_main():
         Dashboard_Login_Register()
 
 def main():
+    Migrate_All_Tables()
     Initialise_Session()
     Streamlit_main()
     

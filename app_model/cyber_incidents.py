@@ -6,7 +6,7 @@ def migrate_cyber_incidents(conn):
     results = cur.fetchone()
     if results is None:
         data = pd.read_csv('CW2_CST1510_M01127899\DATA\cyber_incidents.csv')
-        data.to_sql('cyber_incidents', conn)
+        data.to_sql('cyber_incidents', conn,index=False)
     else:
         #table already exist
         pass

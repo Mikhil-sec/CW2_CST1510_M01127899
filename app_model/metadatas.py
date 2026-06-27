@@ -6,7 +6,7 @@ def migrate_metadatas(conn):
     results = cur.fetchone()
     if results is None:
         data = pd.read_csv('CW2_CST1510_M01127899\DATA\datasets_metadata.csv')
-        data.to_sql('metadatas', conn)
+        data.to_sql('metadatas', conn, index=False)
     else:
         #table already exist
         pass
