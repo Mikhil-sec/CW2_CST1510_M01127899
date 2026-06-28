@@ -4,6 +4,7 @@ from app_model.users import New_User, register_user,login_User, Register_User_St
 from app_model.cyber_incidents import migrate_cyber_incidents, get_all_cyber_incidents
 from app_model.it_tickets import migrate_it_tickets, get_all_it_tickets
 from app_model.metadatas import migrate_metadatas, get_all_metadatas
+from app_model.ai_assistant import ask_ai_about_data
 
 import streamlit as st
 import pandas as pd
@@ -75,12 +76,16 @@ def Dashboard_Login_Register():
 def User_Dashboard():
     conn = get_connection()
     st.title(f"Welcome, {st.session_state["username"]} !")
-    st.write("This is the dashboard beep bop 😎")
+    st.write("Dashboard beep boop 😎")
     if st.button("Logout"): #reseting states
         st.session_state["logged_in"] = False
         st.session_state["username"] = None
+        st.session_state["cyber_chat"]=[]
+        st.session_state["ITtickets_chat"]= []
+        st.session_state["metadata_chat"]=[]
         st.rerun() #force rerun to go back to login page
     st.divider()
+    #selecting which dataset's dashboard to display
     dataset_choice = st.sidebar.selectbox("Choose a dataset",["Cyber incidents", "IT Tickets", "Dataset Metadata"])
 
 
@@ -95,6 +100,7 @@ def User_Dashboard():
         with col2:
             st.caption("By Category")
             st.bar_chart(df["category"].value_counts())
+        Streamlit_render_ai_chat(df,"Cyber Incidents",chat_key="cyber_chat")
 
 
     elif dataset_choice == "IT Tickets":
@@ -108,21 +114,45 @@ def User_Dashboard():
         with col2:
             st.caption("By Status")
             st.bar_chart(df["status"].value_counts())
+        
 
         st.caption("Average Resolution Time by Priority (hours)")
         st.bar_chart(df.groupby("priority")["resolution_time_hours"].mean())
 
+        Streamlit_render_ai_chat(df,"IT Tickets",chat_key="ITtickets_chat")
 
     elif dataset_choice == "Dataset Metadata":
+        #ADD MORE TO THIS DASHBOARD
         df = get_all_metadatas(conn)
         st.subheader("Dataset Metadata")
         st.dataframe(df)
+
+        Streamlit_render_ai_chat(df,"Dataset Metadata",chat_key="metadata_chat")
 
 def Streamlit_main():
     if st.session_state["logged_in"]:
         User_Dashboard()
     else:
         Dashboard_Login_Register()
+
+def Streamlit_render_ai_chat(df,dataset_name, chat_key):
+    st.divider()
+    st.subheader(f"💬 Ask about {dataset_name}")
+    if chat_key not in st.session_state:
+        st.session_state[chat_key]=[]
+    for role, text in st.session_state[chat_key]:
+        with st.chat_message(role):
+            st.write(text)
+
+    user_question = st.chat_input(f"Ask a question about {dataset_name}...",key=f"{chat_key}_input")
+    if user_question:
+        st.session_state[chat_key].append(("user",user_question))
+        with st.spinner("Thinking..."):
+            answer = ask_ai_about_data(user_question,df,dataset_name)
+        
+        st.session_state[chat_key].append(("assistant",answer))
+        st.rerun()
+        
 
 def main():
     Migrate_All_Tables()
