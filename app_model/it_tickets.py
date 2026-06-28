@@ -5,7 +5,7 @@ def migrate_it_tickets(conn):
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='it_tickets'")
     results = cur.fetchone()
     if results is None:
-        data = pd.read_csv('CW2_CST1510_M01127899\DATA\it_tickets.csv')
+        data = pd.read_csv(r'DATA\it_tickets.csv')
         data.to_sql('it_tickets', conn, index=False)
     else:
         #table already exist
