@@ -4,4 +4,4 @@ __pycache__/
 .vscode/
 .idea/
 .venv/
-*.db #stops database upload to github
+*.db 
