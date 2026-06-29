@@ -1,5 +1,5 @@
 import pandas as pd
-
+#comments!
 def migrate_it_tickets(conn):
     cur = conn.cursor()
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='it_tickets'")

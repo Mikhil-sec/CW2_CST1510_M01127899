@@ -1,5 +1,5 @@
 import pandas as pd
-
+#Comments!
 def migrate_metadatas(conn):
     cur = conn.cursor()
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='metadatas' ")

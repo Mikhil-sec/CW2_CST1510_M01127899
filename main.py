@@ -8,7 +8,7 @@ from app_model.ai_assistant import ask_ai_about_data
 
 import streamlit as st
 import pandas as pd
-
+# NEED COMMENTSSS
 def Migrate_All_Tables():
     conn = get_connection()
     create_user_table(conn)

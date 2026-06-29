@@ -2,6 +2,10 @@ import bcrypt
 from app_model.schema import add_user, get_user
 from app_model.db import get_connection
 
+
+#Need better comment
+
+
 #CLI based user input
 def New_User():
     Username = input("Hello, Please enter your username: ")
@@ -19,6 +23,10 @@ def Login():
     Username = input("Hello, Please enter your username")
     Password = input("Please enter your password")
     #add a check login -- old code for CLI - does it need to exist and work properly?
+
+#==========================================
+#    SECURE PASSWORD STORAGE(HASHING)
+#==========================================
 
 def Password_Checker(Inputted_Psw,Hash_Psw):
     Byte_Hash_Psw = Hash_Psw.encode('utf-8')
