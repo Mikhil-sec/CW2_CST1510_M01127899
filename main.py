@@ -1,3 +1,4 @@
+#importing all necessary functions from other files
 from app_model.db import get_connection
 from app_model.schema import create_user_table
 from app_model.users import New_User, register_user,login_User, Register_User_Streamlit, Login_User_Streamlit
@@ -5,12 +6,14 @@ from app_model.cyber_incidents import migrate_cyber_incidents, get_all_cyber_inc
 from app_model.it_tickets import migrate_it_tickets, get_all_it_tickets
 from app_model.metadatas import migrate_metadatas, get_all_metadatas
 from app_model.ai_assistant import ask_ai_about_data
-
+#importing necessary libraries
 import streamlit as st
 import pandas as pd
-# NEED COMMENTSSS
+#global variable to hold the database connection
+conn = get_connection() 
+#function to migrate all tables in the database
 def Migrate_All_Tables():
-    conn = get_connection()
+    
     create_user_table(conn)
     migrate_cyber_incidents(conn)
     migrate_it_tickets(conn)
@@ -34,12 +37,13 @@ def cli_authentication_system():
 # STREAMLIT FUNCTIONS
 #========================
 
+#function to initialise session state variables for login status and username
 def Initialise_Session():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
     if "username" not in st.session_state:
         st.session_state["username"] = None
-
+#function to render the login and register dashboard
 def Dashboard_Login_Register():
     st.title("Cortex")
     st.caption("Multi-domain intelligence platform")
@@ -74,7 +78,6 @@ def Dashboard_Login_Register():
                 st.error(message)
 
 def User_Dashboard():
-    conn = get_connection()
     st.title(f"Welcome, {st.session_state["username"]} !")
     st.write("Dashboard beep boop 😎")
     if st.button("Logout"): #reseting states
@@ -158,7 +161,9 @@ def main():
     Migrate_All_Tables()
     Initialise_Session()
     Streamlit_main()
-    
+
 if __name__ == "__main__":
     main()
+
+conn.close() #closing the database connection when the program ends
     

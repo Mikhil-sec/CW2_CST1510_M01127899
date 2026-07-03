@@ -13,7 +13,7 @@ def ask_ai_about_data(question, df: pd.DataFrame, dataset_name): #type hint used
 Here is the full dataset in CSV format:
 {data_as_text}
 Answer the user's question using ONLY this data. If the answer requires counting, filtering, or calculating, do that accurately based on the rows shown. Be concise and specific.
-
+Do not answer questions that are not related to the dataset. If the question is unrelated, respond with "I can only answer questions about the dataset provided."
 User question: {question}
 """
     response = client.models.generate_content(
