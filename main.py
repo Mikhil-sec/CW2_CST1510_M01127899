@@ -6,15 +6,16 @@ from app_model.cyber_incidents import migrate_cyber_incidents, get_all_cyber_inc
 from app_model.it_tickets import migrate_it_tickets, get_all_it_tickets
 from app_model.metadatas import migrate_metadatas, get_all_metadatas
 from app_model.ai_assistant import ask_ai_about_data
-#importing necessary libraries
+#importing necessary library
 import streamlit as st
-import pandas as pd
+
 #global variable to hold the database connection
 conn = get_connection() 
 #function to migrate all tables in the database
 def Migrate_All_Tables():
     
     create_user_table(conn)
+    
     migrate_cyber_incidents(conn)
     migrate_it_tickets(conn)
     migrate_metadatas(conn)
@@ -79,7 +80,7 @@ def Dashboard_Login_Register():
 
 def User_Dashboard():
     st.title(f"Welcome, {st.session_state["username"]} !")
-    st.write("Dashboard beep boop 😎")
+    st.write("Your personalized dashboard for multi-domain intelligence.")
     if st.button("Logout"): #reseting states
         st.session_state["logged_in"] = False
         st.session_state["username"] = None
@@ -151,10 +152,17 @@ def Streamlit_render_ai_chat(df,dataset_name, chat_key):
     if user_question:
         st.session_state[chat_key].append(("user",user_question))
         with st.spinner("Thinking..."):
-            answer = ask_ai_about_data(user_question,df,dataset_name)
-        
-        st.session_state[chat_key].append(("assistant",answer))
-        st.rerun()
+            try:
+                answer = ask_ai_about_data(user_question,df,dataset_name)
+            except Exception as e:
+                #Friendly error message for user on the GUI
+                st.error("Sorry, the AI assistant is unavailable right now. Please try again later.") 
+                #Technical error message for developer/debugger on terminal
+                print(f"AI error: {e}")
+                answer = None
+        if answer:
+            st.session_state[chat_key].append(("assistant",answer))
+            st.rerun()
         
 
 def main():

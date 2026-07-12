@@ -1,10 +1,9 @@
 import bcrypt
 from app_model.schema import add_user, get_user
 from app_model.db import get_connection
-
-
-#Need better comment
-
+import sqlite3 #Imported to use its error handling syntax in Register User function
+#getting global connection to database
+conn = get_connection()
 
 #CLI based user input
 def New_User():
@@ -45,24 +44,35 @@ def HashPassword_Generator(psw):
 #=======================================
 
 
-def Register_User_Streamlit(Username,Password):
+def Register_User_Streamlit(Username:str,Password:str): #type hint so strip() gets recognized
     """Takes username/password as arguments instead of asking via input()."""
-    conn = get_connection()
-
+    
+    if Username.strip() == "": #using strip to remove whitespace
+        return False, "Username cannot be empty"
+    
+    if Password.strip() == "":
+        return False, "Password cannot be empty"
     existing_user = get_user(conn, Username)
     if existing_user is not None:
         return False, "Username already exists." #returns both boolean and string
 
     Hash_Psw = HashPassword_Generator(Password)
-    add_user(conn, Username, Hash_Psw)
-    return True, "User successfully registered!" #returns both boolean and string
-
+    try:
+        add_user(conn, Username, Hash_Psw)
+        return True, "User successfully registered!" #returns both boolean and string
+    except sqlite3.IntegrityError:
+        return False, "Username already exists"
+    except Exception as e:
+        print(f"Registering user to database error: {e}") #prints to terminal for developer/debugger
+        return False, "An unexpected error occurred. Please try again."
+        
 def Login_User_Streamlit(Username,Password):
     """Streamlit function for Login"""
     
-    conn = get_connection()
-    user = get_user(conn, Username)
-    
+    try:
+        user = get_user(conn, Username)
+    except sqlite3.Error:
+        return False, "A database error has occurred"
     if user is None:
         
         return False, "Username does not exist"

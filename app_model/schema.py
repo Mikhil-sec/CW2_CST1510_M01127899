@@ -1,4 +1,4 @@
-#COMMENT EVERYTHING
+
 def create_user_table(conn):
     cur = conn.cursor()
     sql = '''CREATE TABLE IF NOT EXISTS users (

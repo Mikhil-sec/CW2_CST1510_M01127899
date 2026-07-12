@@ -8,9 +8,6 @@ def migrate_metadatas(conn):
         metadatas_path = Path(__file__).parent.parent / "DATA" / "datasets_metadata.csv"
         data = pd.read_csv(metadatas_path)
         data.to_sql('metadatas', conn, index=False)
-    else:
-        #table already exist
-        pass
 
 def get_all_metadatas(conn):
     sql = 'SELECT * FROM metadatas'
