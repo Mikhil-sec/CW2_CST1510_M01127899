@@ -2,6 +2,7 @@ import bcrypt
 from app_model.schema import add_user, get_user
 from app_model.db import get_connection
 import sqlite3 #Imported to use its error handling syntax in Register User function
+import re
 #getting global connection to database
 conn = get_connection()
 
@@ -45,7 +46,7 @@ def HashPassword_Generator(psw):
 
 
 def Register_User_Streamlit(Username:str,Password:str): #type hint so strip() gets recognized
-    """Takes username/password as arguments instead of asking via input()."""
+    #Takes username/password as arguments instead of asking via input()
     
     if Username.strip() == "": #using strip to remove whitespace
         return False, "Username cannot be empty"
@@ -65,9 +66,42 @@ def Register_User_Streamlit(Username:str,Password:str): #type hint so strip() ge
     except Exception as e:
         print(f"Registering user to database error: {e}") #prints to terminal for developer/debugger
         return False, "An unexpected error occurred. Please try again."
-        
+def check_password_strength(password):
+    #Returns (strength_label, score_out_of_5, list_of_missing_requirements)
+    #score: 0-2 = Weak, 3 = Medium, 4-5 = Strong
+    missing = []
+    score = 0
+    if len(password) < 8:
+        missing.append("At least 8 characters")
+        return "Weak", 0, missing  # return immediately, no point checking anything else
+    score +=1
+    if re.search(r"[A-Z]",password):
+        score +=1
+    else:
+        missing.append("At least one uppercase letter")
+    if re.search(r"[a-z]",password):
+        score +=1
+    else:
+        missing.append("At least one lowercase letter")
+    if re.search(r"[0-9]",password):
+        score += 1
+    else:
+        missing.append("At least one number")
+    if re.search(r'[!@#$%^&*(),.?\":{}|<>]', password):
+        score += 1
+    else:
+        missing.append("At least one special character (!@#$% etc.)")
+    if score <= 2:
+        label = "Weak"
+    elif score <= 3:
+        label = "Medium"
+    else:
+        label = "Strong"
+
+    return label, score, missing   
+
 def Login_User_Streamlit(Username,Password):
-    """Streamlit function for Login"""
+    #Streamlit function for Login
     
     try:
         user = get_user(conn, Username)

@@ -1,11 +1,11 @@
 #importing all necessary functions from other files
 from app_model.db import get_connection
 from app_model.schema import create_user_table
-from app_model.users import New_User, register_user,login_User, Register_User_Streamlit, Login_User_Streamlit
+from app_model.users import register_user,login_User, Register_User_Streamlit, Login_User_Streamlit, check_password_strength
 from app_model.cyber_incidents import migrate_cyber_incidents, get_all_cyber_incidents
 from app_model.it_tickets import migrate_it_tickets, get_all_it_tickets
 from app_model.metadatas import migrate_metadatas, get_all_metadatas
-from app_model.ai_assistant import ask_ai_about_data
+from app_model.ai_assistant import ask_ai_about_data, suggest_strong_passwords
 #importing necessary library
 import streamlit as st
 import plotly.express as px
@@ -63,10 +63,53 @@ def Dashboard_Login_Register():
         if menu == "Register":
             st.subheader("Create New Account")
             username = st.text_input("Username",key="register_username")  #keys used to identify each input box, especially since 2 username used (register & login)
-            #below used width instead of : use_container_width= True(REMOVE THIS LATER)
             password = st.text_input("Password", type="password",key="register_password") #type = "password" to hide password input on screen
-            if st.button("Register",width="stretch"): #use use_container_width= True is deprecated and will be removed in a future release of streamlit (ADD TO DOCUMENTATION)
-                success, message = Register_User_Streamlit(username,password)
+            confirm_password = st.text_input("Confirm Password", type="password", key="confirm_password")
+
+            # default before user types anything
+            strength_label = "Weak"
+            score = 0
+            missing = []
+            success = False
+            message = ""
+            # Live password strength display
+            if password:
+                strength_label,score,missing = check_password_strength(password)
+                # Color and progress value
+                if strength_label == "Weak":
+                    bar_color = "🔴"
+                    progress_val = score/5
+                elif strength_label == "Medium":
+                    bar_color = "🟡"
+                    progress_val = score / 5
+                else:
+                    bar_color = "🟢"
+                    progress_val = 1.0
+
+                st.progress(progress_val)
+                st.caption(f"{bar_color} Password strength: **{strength_label}**")
+            #Display of missing requirements
+            if missing:
+                with st.expander("What's missing?"):
+                    for req in missing:
+                        st.caption(f"• {req}")
+            #AI password suggestion button - only if not strong pw label
+            if strength_label != "Strong":
+                if st.button("💡 Suggest stronger passwords"):
+                    with st.spinner("Generating suggestions..."):
+                        suggestions = suggest_strong_passwords(password)
+                    st.info(suggestions)
+
+            #Register button logic
+            if st.button("Register",width="stretch"):
+                if not password:
+                    st.error("Password cannot be empty.")
+                elif strength_label == "Weak":
+                    st.error("Password is too weak to register. Please strengthen it first.")
+                elif password != confirm_password:
+                    st.error("Passwords do not match.")
+                else:
+                    success, message = Register_User_Streamlit(username,password)
                 if success:
                     st.session_state["logged_in"]= True
                     st.session_state["username"] = username

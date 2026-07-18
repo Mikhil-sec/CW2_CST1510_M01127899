@@ -27,5 +27,30 @@ def ask_ai_about_data(question, df: pd.DataFrame, dataset_name): #type hint used
         contents=prompt
     )
     return response.text
+def suggest_strong_passwords(weak_password):
+    #Asks Gemini to suggest stronger password alternatives
+    prompt = f"""A user has entered this weak password: '{weak_password}'
+
+Suggest 3 stronger versions or variations of this password that are:
+
+1. At least 8 characters long
+2. Made of REAL English words or based on the original password's theme/words (passphrase style) — for example: "BlueSky$Dance99!" or "Tiger!Runs@Fast7"
+3. Include at least one uppercase letter, one number, and one special character naturally within the words
+4. Easy to read, say, and remember — NO leetspeak (no @ instead of a, no 3 instead of e, no ! instead of i)
+
+Format your response exactly like this for each suggestion:
+Password: [the password]
+Why it works: [one sentence explanation]
+
+Do not include any other text."""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        return response.text
+    except Exception as e:
+        print(f"Password suggestion error: {e}")
+        return "Unable to generate suggestions right now. Try adding uppercase letters, numbers and special characters to your password."
 
 
