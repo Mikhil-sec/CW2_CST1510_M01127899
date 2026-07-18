@@ -1,6 +1,6 @@
 #importing all necessary functions from other files
 from app_model.db import get_connection
-from app_model.schema import create_user_table
+from app_model.schema import create_user_table , delete_user
 from app_model.users import register_user,login_User, Register_User_Streamlit, Login_User_Streamlit, check_password_strength
 from app_model.cyber_incidents import migrate_cyber_incidents, get_all_cyber_incidents
 from app_model.it_tickets import migrate_it_tickets, get_all_it_tickets
@@ -140,6 +140,7 @@ def User_Dashboard():
         #selecting which dataset's dashboard to display
         dataset_choice = st.selectbox("Choose a dataset",["Cyber incidents", "IT Tickets", "Dataset Metadata"])
         st.divider()
+        #Log out button
         if st.button("🚪 :red[**Log out**]",width="stretch"): #reseting states
             st.session_state["logged_in"] = False
             st.session_state["username"] = None
@@ -147,6 +148,29 @@ def User_Dashboard():
             st.session_state["ITtickets_chat"]= []
             st.session_state["metadata_chat"]=[]
             st.rerun() #force rerun to go back to login page
+        #Delete account button
+        @st.dialog("Delete Account")
+        def confirm_delete():
+            st.warning("This action cannot be undone.")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Yes"):
+                    conn = get_connection()
+                    delete_user(conn, st.session_state["username"])
+                    st.session_state["logged_in"] = False
+                    st.session_state["username"] = None
+                    st.session_state["cyber_chat"]=[]
+                    st.session_state["ITtickets_chat"]= []
+                    st.session_state["metadata_chat"]=[]
+                    st.success("Account deleted successfully.")
+                    conn.close()
+                    st.rerun()
+            with col2:
+                if st.button("No"):
+                    st.rerun()
+        if st.button("🗑️ :red[Delete Account]",width="stretch"):
+            confirm_delete()
+
     
     if dataset_choice == "Cyber incidents":
         Render_Cyber_Incidents()
