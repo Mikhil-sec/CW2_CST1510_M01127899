@@ -1,77 +1,97 @@
-# Cortex — CW2 (CST1510)
+# 🛡️ Cortex — Multi-Domain Intelligence Platform
+> CST1510 Coursework 2 | BSc Cyber Security and Digital Forensics
 
-A modular Streamlit web app with secure authentication, SQLite-backed data storage, and an AI assistant powered by the Gemini API.
+A secure, AI-powered web application built with Python and Streamlit for monitoring cybersecurity incidents, IT operations, and dataset analytics.
+
+---
+
+## Features
+
+- 🔐 Secure authentication with bcrypt password hashing
+- 📊 Interactive dashboards for three operational domains
+- 🧠 Gemini AI assistant embedded per dataset
+- 🔍 Cross-domain intelligence analysis across all datasets simultaneously
+- 👤 Role-based access control with admin panel
+- 📈 Plotly visualisations with SOC-themed design
+- ⬇️ CSV export with live filtering
+
+---
 
 ## Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd CW2_CST1510_M01127899
-   ```
+### 1. Clone the repository
+```bash
+git clone <your-repo-url>
+cd CW2_CST1510_M01127899
+```
 
-2. **Create and activate a virtual environment**
-   ```bash
-   python -m venv .venv
+### 2. Create and activate a virtual environment
+```bash
+python -m venv .venv
 
-   # Windows
-   .venv\Scripts\activate
+# Windows
+.venv\Scripts\activate
 
-   # Mac/Linux
-   source .venv/bin/activate
-   ```
+# Mac/Linux
+source .venv/bin/activate
+```
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-## Setting up your Gemini API key
+### 4. Configure environment variables
 
-The AI assistant feature requires a Gemini API key. For security, real API keys are never committed to this repository — you'll need to add your own.
+Copy `.env.example` to `.env` and fill in your values:
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+ADMIN_CODE=your_chosen_admin_passphrase
+```
 
-1. Get a **free** Gemini API key from [Google AI Studio](https://aistudio.google.com) (no credit card required):
-   - Sign in with a Google account
-   - Click **"Get API key"** → **"Create API key"**
-   - Copy the key
+**Getting a free Gemini API key:**
+1. Go to [aistudio.google.com](https://aistudio.google.com)
+2. Sign in with a Google account
+3. Click **Get API key** → **Create API key**
+4. Paste it into your `.env` file
 
-2. In the project root, create a new file named exactly `.env` (copy `.env.example` as a starting point)
+> Without a valid key the app runs normally — only the AI features will be unavailable.
 
-3. Paste your key in like this:
-   ```
-   GEMINI_API_KEY=your_actual_key_here
-   ```
-
-4. Save the file. The app will automatically load it on startup.
-
-> **Note:** Without a valid key, the app will still run — only the AI assistant feature will fail to respond.
-
-## Running the app
-
+### 5. Run the app
 ```bash
 streamlit run main.py
 ```
 
-The app will open in your browser automatically at `http://localhost:8501`.
+The app opens automatically at `http://localhost:8501`
 
-## Project structure
+---
+
+## Admin Access
+
+To register an admin account, open the **"Have an admin code?"** expander on the registration page and enter the `ADMIN_CODE` value from your `.env` file. Admin accounts have access to the Admin Panel for user management and login activity monitoring.
+
+---
+
+## Project Structure
 
 ```
 CW2_CST1510_M01127899/
-├── main.py              # Streamlit entry point
-├── .env                 # Your local API key (not committed)
-├── .env.example          # Template — copy this to create your .env
+├── main.py                  # Streamlit entry point
+├── .env                     # Local secrets (not committed)
+├── .env.example             # Environment template
+├── requirements.txt
 ├── DATA/
-│   ├── project_data.db   # SQLite database (auto-generated, not committed)
 │   ├── cyber_incidents.csv
 │   ├── datasets_metadata.csv
 │   └── it_tickets.csv
 └── app_model/
-    ├── db.py             # Database connection
-    ├── schema.py         # Table definitions
-    ├── users.py          # Authentication logic
-    ├── cyber_incidents.py
-    ├── it_tickets.py
-    ├── metadatas.py
-    └── ai_assistant.py   # Gemini AI integration
+    ├── db.py                # Database connection
+    ├── schema.py            # Table definitions & CRUD
+    ├── users.py             # Authentication & password logic
+    ├── cyber_incidents.py   # Incident queries & migration + dashboard
+    ├── it_tickets.py        # Ticket queries & migration + dashboard
+    ├── metadatas.py         # Metadata queries & migration + dashboard
+    └── ai_assistant.py      # Gemini AI integration
 ```
+
+*Student ID: M01127899*

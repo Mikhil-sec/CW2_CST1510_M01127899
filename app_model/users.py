@@ -31,12 +31,13 @@ def Login():
 #    SECURE PASSWORD STORAGE(HASHING)
 #==========================================
 
+#checks if the inputted password matches the hashed password stored in the database
 def Password_Checker(Inputted_Psw,Hash_Psw):
     Byte_Hash_Psw = Hash_Psw.encode('utf-8')
     Byte_Inputted_Psw = Inputted_Psw.encode('utf-8')
     Is_Valid = bcrypt.checkpw(Byte_Inputted_Psw,Byte_Hash_Psw)
     return Is_Valid
-
+#Hashes password using bcrypt and returns the hash as a string
 def HashPassword_Generator(psw):
     byte_psw = psw.encode('utf-8')
     salt = bcrypt.gensalt()
@@ -72,7 +73,7 @@ def Register_User_Streamlit(Username:str,Password:str, Admin_Code=""): #type hin
     Hash_Psw = HashPassword_Generator(Password)
     try:
         add_user_with_role(conn, Username, Hash_Psw, role)
-        return True, f"Account successfully registered! Role: {role.capitalize}" #returns both boolean and string
+        return True, f"Account successfully registered! Role: {role}" #returns both boolean and string
     except sqlite3.IntegrityError:
         return False, "Username already exists"
     except Exception as e:

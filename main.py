@@ -171,6 +171,8 @@ def User_Dashboard():
             st.session_state["cyber_chat"]=[]
             st.session_state["ITtickets_chat"]= []
             st.session_state["metadata_chat"]=[]
+            st.session_state["intelligence_result"] = None
+            st.session_state["intelligence_type"] = None
             st.rerun() #force rerun to go back to login page
         #Each dashboard call option
         
@@ -189,6 +191,8 @@ def User_Dashboard():
                     st.session_state["cyber_chat"]=[]
                     st.session_state["ITtickets_chat"]= []
                     st.session_state["metadata_chat"]=[]
+                    st.session_state["intelligence_result"] = None
+                    st.session_state["intelligence_type"] = None
                     st.success("Account deleted successfully.")
                     conn.close()
                     st.rerun()

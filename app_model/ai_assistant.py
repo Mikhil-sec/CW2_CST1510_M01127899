@@ -4,7 +4,7 @@ from google import genai
 from dotenv import load_dotenv
 #Comments?
 load_dotenv() #no parameter means it will look for .env file
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY")) #searched and ref documentation
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def ask_ai_about_data(question, df: pd.DataFrame, dataset_name): #type hint used so editor knows a dataframe is passed to df
     data_as_text = df.to_csv(index=False)  # Convert DataFrame to CSV string without index
@@ -55,27 +55,20 @@ Do not include any other text."""
     
 #Cross analysis of datasets
 def cross_dataset_analysis(analysis_type, df_incidents, df_tickets, df_metadata):
-    """
-    Sends all three datasets to Gemini for cross-domain analysis.
-    analysis_type determines the specific prompt used.
-    """
+    #Sends all three datasets to Gemini for cross-domain analysis.
+    #analysis_type determines the specific prompt used.
     incidents_csv = df_incidents.to_csv(index=False)
     tickets_csv = df_tickets.to_csv(index=False)
     metadata_csv = df_metadata.to_csv(index=False)
 
     base_context = f"""You are a senior cybersecurity analyst with access to three operational datasets:
-
 DATASET 1 — CYBER INCIDENTS:
 {incidents_csv}
-
 DATASET 2 — IT TICKETS:
 {tickets_csv}
-
 DATASET 3 — DATASET METADATA REGISTRY:
 {metadata_csv}
-
 """
-
     prompts = {
         "high_risk": base_context + """Identify high-risk time periods by cross-referencing the cyber incident timestamps with IT ticket creation dates.
 Find periods where both datasets show elevated activity simultaneously.

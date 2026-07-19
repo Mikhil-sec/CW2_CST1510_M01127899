@@ -25,7 +25,7 @@ def log_login(conn, username):
     cur = conn.cursor()
     timestamp = datetime.datetime.now().strftime(r"%Y-%m-%d %H:%M:%S")
     cur.execute(
-        'INSERT INTO login_activity (username, login_timestamp) VALUES (?, ?)',
+        'INSERT INTO login_activity (username, login_timestamp) VALUES (?, ?)', # ? placeholder to prevent SQL injection
         (username, timestamp)
     )
     conn.commit()
