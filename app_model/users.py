@@ -1,8 +1,11 @@
 import bcrypt
-from app_model.schema import add_user, get_user
+from app_model.schema import add_user, get_user, add_user_with_role, log_login, get_user_role
 from app_model.db import get_connection
 import sqlite3 #Imported to use its error handling syntax in Register User function
 import re
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 #getting global connection to database
 conn = get_connection()
 
@@ -44,8 +47,13 @@ def HashPassword_Generator(psw):
 #    STREAMLIT REGISTRATION & LOGIN
 #=======================================
 
+#Taking admin code from env
+env_path = Path(__file__).parent.parent / ".env"  # Define the path to the .env file
+load_dotenv(env_path)  # Load environment variables from the .env
 
-def Register_User_Streamlit(Username:str,Password:str): #type hint so strip() gets recognized
+ADMIN_CODE = os.getenv("ADMIN_CODE", "CortexAdmin2026!")  # retrieve admin code from .env or use default value if not found
+
+def Register_User_Streamlit(Username:str,Password:str, Admin_Code=""): #type hint so strip() gets recognized
     #Takes username/password as arguments instead of asking via input()
     
     if Username.strip() == "": #using strip to remove whitespace
@@ -53,14 +61,18 @@ def Register_User_Streamlit(Username:str,Password:str): #type hint so strip() ge
     
     if Password.strip() == "":
         return False, "Password cannot be empty"
+    #Determine role based on admin code
+    role = 'admin' if Admin_Code.strip() == ADMIN_CODE else 'user'
+
+
     existing_user = get_user(conn, Username)
     if existing_user is not None:
         return False, "Username already exists." #returns both boolean and string
 
     Hash_Psw = HashPassword_Generator(Password)
     try:
-        add_user(conn, Username, Hash_Psw)
-        return True, "User successfully registered!" #returns both boolean and string
+        add_user_with_role(conn, Username, Hash_Psw, role)
+        return True, f"Account successfully registered! Role: {role.capitalize}" #returns both boolean and string
     except sqlite3.IntegrityError:
         return False, "Username already exists"
     except Exception as e:
@@ -102,23 +114,30 @@ def check_password_strength(password):
 
 def Login_User_Streamlit(Username,Password):
     #Streamlit function for Login
-    
+    #check for empty input
+    if Username.strip() == "":
+        return False, "Username cannot be empty", None
+    if Password.strip() == "":
+        return False, "Password cannot be empty", None
     try:
+        #check if username exist
         user = get_user(conn, Username)
-    except sqlite3.Error:
-        return False, "A database error has occurred"
-    if user is None:
-        
-        return False, "Username does not exist"
-    stored_Hash = user[2]
-    
-    is_valid = Password_Checker(Password,stored_Hash)
-    
-    if is_valid == True:
-        
-        return True, "Login successful!"
-    else:
-        return False, "Incorrect Password"
+        if user is None:
+            return False, "Username does not exist", None
+        #takes the hash in database
+        stored_Hash = user[2]
+        #checks the passwords if hash matches
+        is_valid = Password_Checker(Password, stored_Hash)
+        if is_valid:
+            #logs time of login
+            log_login(conn, Username)
+            role = get_user_role(conn, Username)
+            return True, "Login successful!", role
+        else:
+            return False, "Incorrect Password", None
+    except Exception as e: #general error handling
+        print(f"Login error: {e}")
+        return False, "Login failed due to a system error.", None
     
 
 

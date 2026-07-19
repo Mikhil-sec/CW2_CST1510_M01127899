@@ -1,11 +1,11 @@
 #importing all necessary functions from other files
 from app_model.db import get_connection
-from app_model.schema import create_user_table , delete_user
+from app_model.schema import create_user_table , delete_user, create_user_login_activity_table, get_user_role, users_info_display, get_login_activity, update_user_role
 from app_model.users import register_user,login_User, Register_User_Streamlit, Login_User_Streamlit, check_password_strength
 from app_model.cyber_incidents import migrate_cyber_incidents, get_all_cyber_incidents
 from app_model.it_tickets import migrate_it_tickets, get_all_it_tickets
 from app_model.metadatas import migrate_metadatas, get_all_metadatas
-from app_model.ai_assistant import ask_ai_about_data, suggest_strong_passwords
+from app_model.ai_assistant import ask_ai_about_data, suggest_strong_passwords, cross_dataset_analysis
 #importing necessary library
 import streamlit as st
 import plotly.express as px
@@ -20,7 +20,7 @@ st.set_page_config("Cortex","🛡️","wide")
 def Migrate_All_Tables():
     
     create_user_table(conn)
-    
+    create_user_login_activity_table(conn)
     migrate_cyber_incidents(conn)
     migrate_it_tickets(conn)
     migrate_metadatas(conn)
@@ -46,12 +46,14 @@ def cli_authentication_system():
 # STREAMLIT FUNCTIONS
 #========================
 
-#function to initialise session state variables for login status and username
+#function to initialise session state variables for login status, username and role
 def Initialise_Session():
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
     if "username" not in st.session_state:
         st.session_state["username"] = None
+    if "role" not in st.session_state:
+        st.session_state["role"] = None
 #function to render the login and register dashboard
 def Dashboard_Login_Register():
     col1,col2,col3 = st.columns([1,2,1]) #puts dashboard in center
@@ -65,6 +67,9 @@ def Dashboard_Login_Register():
             username = st.text_input("Username",key="register_username")  #keys used to identify each input box, especially since 2 username used (register & login)
             password = st.text_input("Password", type="password",key="register_password") #type = "password" to hide password input on screen
             confirm_password = st.text_input("Confirm Password", type="password", key="confirm_password")
+            #Collapsible admin code field
+            with st.expander("🔐 Have an admin code?"):
+                admin_code = st.text_input("Admin Code", type="password", key="admin_code")
 
             # default before user types anything
             strength_label = "Weak"
@@ -109,10 +114,12 @@ def Dashboard_Login_Register():
                 elif password != confirm_password:
                     st.error("Passwords do not match.")
                 else:
-                    success, message = Register_User_Streamlit(username,password)
+                    success, message= Register_User_Streamlit(username,password, admin_code)
                 if success:
                     st.session_state["logged_in"]= True
                     st.session_state["username"] = username
+                    role = get_user_role(conn, username)
+                    st.session_state["role"] = role
                     st.success(message)
                     st.rerun()
 
@@ -123,10 +130,11 @@ def Dashboard_Login_Register():
             username = st.text_input("Username", key="login_username")
             password = st.text_input("Password",type="password",key="login_password")
             if st.button("Login",width="stretch"):
-                success, message = Login_User_Streamlit(username, password)
+                success, message, role = Login_User_Streamlit(username, password)
                 if success:
                     st.session_state["logged_in"] = True
                     st.session_state["username"] = username
+                    st.session_state["role"] = role
                     st.success(message)
                     st.rerun()
                 else:
@@ -136,18 +144,36 @@ def User_Dashboard():
     #creating and using a Sidebar
     with st.sidebar:
         st.markdown(f"### 👤 {st.session_state["username"]}")
+        role = st.session_state["role"]
+        if role == 'admin':
+            st.caption("🔴 Administrator")
+        else:
+            st.caption("🟢 User")
         st.divider()
-        #selecting which dataset's dashboard to display
-        dataset_choice = st.selectbox("Choose a dataset",["Cyber incidents", "IT Tickets", "Dataset Metadata"])
+        # Showing admin panel option only for admins
+        if role == 'admin':
+            view = st.selectbox("🖥️ View", ["Dashboard", "Admin Panel"])
+        else:
+            view = "Dashboard"
+
+        if view == "Dashboard":
+            #selecting which dataset's dashboard to display
+            dataset_choice = st.selectbox(
+                "📂 Choose a dataset",
+                ["Cyber Incidents", "IT Tickets", "Dataset Metadata","🧠 Intelligence"]
+            )
         st.divider()
         #Log out button
         if st.button("🚪 :red[**Log out**]",width="stretch"): #reseting states
             st.session_state["logged_in"] = False
             st.session_state["username"] = None
+            st.session_state["role"] = None
             st.session_state["cyber_chat"]=[]
             st.session_state["ITtickets_chat"]= []
             st.session_state["metadata_chat"]=[]
             st.rerun() #force rerun to go back to login page
+        #Each dashboard call option
+        
         #Delete account button
         @st.dialog("Delete Account")
         def confirm_delete():
@@ -159,6 +185,7 @@ def User_Dashboard():
                     delete_user(conn, st.session_state["username"])
                     st.session_state["logged_in"] = False
                     st.session_state["username"] = None
+                    st.session_state["role"] = None
                     st.session_state["cyber_chat"]=[]
                     st.session_state["ITtickets_chat"]= []
                     st.session_state["metadata_chat"]=[]
@@ -170,16 +197,96 @@ def User_Dashboard():
                     st.rerun()
         if st.button("🗑️ :red[Delete Account]",width="stretch"):
             confirm_delete()
+    if role == 'admin' and view == "Admin Panel":
+            Render_Admin_Panel(conn)
+    elif view == "Dashboard":
+        if dataset_choice == "Cyber Incidents":
+            Render_Cyber_Incidents()
+        elif dataset_choice == "IT Tickets":
+            Render_IT_Tickets()
+        elif dataset_choice == "Dataset Metadata":
+            Render_Metadata()
+        elif dataset_choice == "🧠 Intelligence":
+            Render_Intelligence()
 
-    
-    if dataset_choice == "Cyber incidents":
-        Render_Cyber_Incidents()
+#Admin Panel Dashboard
+def Render_Admin_Panel(conn):
+    st.title("🔐 Admin Panel")
+    st.caption("Restricted access — administrators only")
+    st.divider()
+    # User management section
+    st.subheader("👥 Registered Users")
+    users_df = users_info_display(conn)
+    st.dataframe(users_df)
+    st.divider()
 
+    # Role management
+    st.subheader("⚙️ Role Management")
+    col1, col2, col3 = st.columns(3)
 
-    elif dataset_choice == "IT Tickets":
-        Render_IT_Tickets()
-    elif dataset_choice == "Dataset Metadata":
-        Render_Metadata()
+    with col1:
+        target_user = st.selectbox("Select User",users_df["username"].tolist())
+    with col2:
+        new_role = st.selectbox("Assign Role",["user", "admin"])
+    with col3:
+        st.write("")
+        st.write("")
+        if st.button("Update Role", width="stretch"):
+            if target_user == st.session_state["username"]:
+                st.error("You cannot change your own role.")
+            else:
+                update_user_role(conn, target_user, new_role)
+                st.success(f"{target_user} is now a {new_role}.")
+                st.rerun()
+
+    st.divider()
+
+    # Delete user
+    st.subheader("🗑️ Delete User")
+    col1, col2 = st.columns(2)
+    with col1:
+        user_to_delete = st.selectbox("Select User to Delete",users_df["username"].tolist(),key="delete_user_select")
+    with col2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Delete User", width="stretch"):
+            if user_to_delete == st.session_state["username"]:
+                st.error("You cannot delete your own account.")
+            else:
+                delete_user(conn, user_to_delete)
+                st.success(f"User '{user_to_delete}' deleted.")
+                st.rerun()
+
+    st.divider()
+
+    # Login activity log
+    st.subheader("📋 Login Activity Log")
+    activity_df = get_login_activity(conn)
+
+    if activity_df.empty:
+        st.info("No login activity recorded yet.")
+    else:
+        # Metric
+        total_logins = len(activity_df)
+        unique_users = activity_df["username"].nunique()
+        col1, col2 = st.columns(2)
+        col1.metric("Total Login Events", total_logins)
+        col2.metric("Unique Users", unique_users)
+
+        st.dataframe(activity_df)
+
+        # Chart — logins per user
+        login_counts = activity_df["username"].value_counts().reset_index()
+        login_counts.columns = ["username", "logins"]
+        fig = px.bar(
+            login_counts,
+            x="username",
+            y="logins",
+            title="Login Frequency by User",
+            color_discrete_sequence=["#00d4ff"]
+        )
+        fig.update_yaxes(dtick=1)
+        st.plotly_chart(fig)
 
 #Cyber Incidents Dashboard
 def Render_Cyber_Incidents():
@@ -379,7 +486,75 @@ def Render_Metadata():
     st.plotly_chart(fig)
     Streamlit_render_ai_chat(df,"Dataset Metadata",chat_key="metadata_chat")
 
+#Intelligence dashboard
+def Render_Intelligence():
+    st.title("🧠 Cross-Domain Intelligence")
+    st.caption("AI-powered analysis across all three operational datasets simultaneously")
+    st.divider()
 
+    #Loading all three datasets
+    df_incidents = get_all_cyber_incidents(conn)
+    df_tickets = get_all_it_tickets(conn)
+    df_metadata = get_all_metadatas(conn)
+
+    #A Quick summary stats at the top
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Cyber Incidents", len(df_incidents))
+    col2.metric("IT Tickets", len(df_tickets))
+    col3.metric("Datasets Tracked", len(df_metadata))
+
+    st.divider()
+    st.subheader("Select an Analysis")
+    st.caption("Each analysis sends all three datasets to Gemini simultaneously for cross-domain insights.")
+
+    #Initialising result in session state
+    if "intelligence_result" not in st.session_state:
+        st.session_state["intelligence_result"] = None
+    if "intelligence_type" not in st.session_state:
+        st.session_state["intelligence_type"] = None
+
+    #analysis buttons — 2x2 grid for professional look instead of a list look
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🔴 Identify High-Risk Periods", width="stretch"):
+            with st.spinner("Analysing time related patterns across datasets..."): #spinner while data loads
+                result = cross_dataset_analysis("high_risk", df_incidents, df_tickets, df_metadata)
+            st.session_state["intelligence_result"] = result
+            st.session_state["intelligence_type"] = "🔴 High-Risk Periods"
+
+        if st.button("📊 Executive Threat Briefing", width="stretch"):
+            with st.spinner("Generating executive briefing..."):
+                result = cross_dataset_analysis("briefing", df_incidents, df_tickets, df_metadata)
+            st.session_state["intelligence_result"] = result
+            st.session_state["intelligence_type"] = "📊 Executive Threat Briefing"
+
+    with col2:
+        if st.button("🔗 Correlate Incidents with IT Tickets", width="stretch"):
+            with st.spinner("Cross-referencing cybers incident and ticket patterns..."):
+                result = cross_dataset_analysis("correlate", df_incidents, df_tickets, df_metadata)
+            st.session_state["intelligence_result"] = result
+            st.session_state["intelligence_type"] = "Cyber Incidents & Ticket Correlation"
+
+        if st.button("🔍 Anomaly Detection", width="stretch"):
+            with st.spinner("Scanning for anomalies across all domains..."):
+                result = cross_dataset_analysis("anomaly", df_incidents, df_tickets, df_metadata)
+            st.session_state["intelligence_result"] = result
+            st.session_state["intelligence_type"] = "🔍 Anomaly Detection"
+
+    #Results Display
+    if st.session_state["intelligence_result"]:
+        st.divider()
+        st.subheader(f"Analysis Result — {st.session_state['intelligence_type']}")
+        st.info(st.session_state["intelligence_result"])
+
+        # Export result as text file
+        st.download_button(
+            label="⬇️ Export Analysis as Text",
+            data=st.session_state["intelligence_result"],
+            file_name=f"cortex_analysis_{st.session_state['intelligence_type'].replace(' ', '_')}.txt",
+            mime="text/plain"
+        )
 
 
 def Streamlit_render_ai_chat(df,dataset_name, chat_key):
