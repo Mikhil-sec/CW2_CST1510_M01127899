@@ -21,7 +21,7 @@ A secure, AI-powered web application built with Python and Streamlit for monitor
 
 ### 1. Clone the repository
 ```bash
-git clone <your-repo-url>
+git clone <https://github.com/Mikhil-sec/CW2_CST1510_M01127899>
 cd CW2_CST1510_M01127899
 ```
 
